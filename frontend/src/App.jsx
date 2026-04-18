@@ -5,13 +5,14 @@ import WaitingLobby from "./pages/waitinglobby";
 
 function App() {
   const [view, setView] = useState('home');
+  const [participants, setParticipants] = useState([]);
+  
   const [roomData, setRoomData] = useState({
     roomID: '------',
     qrCode: '',
     status: ''
   });
 
-  
   const handleCreateRoom = async (userName = "Guest", participantCount = 4) => {
     try {
       const response = await axios.post('http://localhost:8000/api/create-room', {
@@ -27,6 +28,9 @@ function App() {
         status: status
       });
 
+      
+      setParticipants([{ name: userName, status: 'Connected' }]);
+
       setView('lobby');
 
     } catch (error) {
@@ -38,12 +42,12 @@ function App() {
   return (
     <div className="min-h-screen">
       {view === 'home' ? (
-        
         <Homepage onCreateRoom={handleCreateRoom} />
       ) : (
         <WaitingLobby 
           roomCode={roomData.roomID} 
           qrImage={roomData.qrCode} 
+          participants={participants} 
           onBack={() => setView('home')} 
         />
       )}
