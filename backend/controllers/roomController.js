@@ -1,5 +1,4 @@
 const Room = require('../models/Room');
-const QRCode = require('qrcode');
 
 // helper function to generate a unique room ID
 function generateRoomID() {
@@ -16,17 +15,17 @@ function generateRoomID() {
 const createRoom = async (req, res) => {
     try {
         // catch data from the frontend
-        const { hostName, participantNumber } = req.body;
+        const { hostName, expectedParticipants } = req.body;
 
         // validation
         if (!hostName || hostName.trim() === "") {
             return res.status(400).json({ error: 'Host name is required' });
         }
-        if (!participantNumber || participantNumber < 1) {
-            return res.status(400).json({ error: 'Participant number must be at least 1' });
+        if (!expectedParticipants || expectedParticipants < 1) {
+            return res.status(400).json({ error: 'Expected participants must be at least 1' });
         }
 
-        console.log('Received create-room request:', { hostName, participantNumber });
+        console.log('Received create-room request:', { hostName, expectedParticipants });
 
         // generate a unique room ID
         const roomID = generateRoomID();
@@ -35,24 +34,18 @@ const createRoom = async (req, res) => {
         const newRoom = await Room.create({
             roomID: roomID,
             host: hostName,
-            participantNumber: participantNumber,
+            participantNumber: expectedParticipants,
             participants: [
                 { name: hostName, role: 'host', status: 'joined' }
             ],
             status: "waiting"
-        });
-
-        // generate QR Code
-        const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const joinURL = `${frontendBaseUrl}/join?code=${roomID}`;
-        const QRCodeURL = await QRCode.toDataURL(joinURL);
+        });      
         
         console.log('Generated room ID:', roomID);
 
         // send data back to the frontend
         res.json({
             roomID: roomID,
-            QRCodeURL: QRCodeURL,
             status: "waiting"
         });
         
