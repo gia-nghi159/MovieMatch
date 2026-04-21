@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 // database schema
 const roomSchema = new mongoose.Schema({
-    roomId: { type: String, required: true, unique: true },
+    roomID: { type: String, required: true, unique: true },
     host: { type: String, required: true },
     participantNumber: { type: Number, required: true },
     participants: { type: Array, default: [] },

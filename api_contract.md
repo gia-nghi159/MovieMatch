@@ -25,14 +25,12 @@
 | Field | Type | Description |
 | --- | --- | --- |
 | `roomID` | `string` | The generated 6-character alphanumeric room code. |
-| `QRCodeURL` | `string` | The base64 data URL of the generated QR code. |
 | `status` | `string` | The current status of the created room. |
 
 **Example Response:**
 ```json
 {
   "roomID": "A1B2C3",
-  "QRCodeURL": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA...",
   "status": "waiting for participants"
 }
 ```

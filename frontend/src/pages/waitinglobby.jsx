@@ -18,7 +18,7 @@ const WaitingLobby = () => {
         setLoading(true);
         setError('');
 
-        const response = await fetch(`http://127.0.0.1:8000/api/room/${roomID}`);
+        const response = await fetch(`http://localhost:8000/api/room/${roomID}`);
         const data = await response.json();
 
         if (!response.ok) {
