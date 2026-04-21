@@ -25,7 +25,9 @@ const Homepage = () => {
             Create Group Room
           </button>
 
-          <button className="bg-transparent border-2 border-[#ffd369] text-[#ffd369] py-[15px] rounded-xl text-[18px] font-bold hover:bg-[#ffd369] hover:text-[#1b1b1b] transition-all transform hover:-translate-y-0.5">
+          <button 
+          onClick={() => navigate('/join-room')}
+          className="bg-transparent border-2 border-[#ffd369] text-[#ffd369] py-[15px] rounded-xl text-[18px] font-bold hover:bg-[#ffd369] hover:text-[#1b1b1b] transition-all transform hover:-translate-y-0.5">
             Join Room
           </button>
 
