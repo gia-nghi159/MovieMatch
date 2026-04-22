@@ -76,11 +76,70 @@ const submitVote = async (req, res) => {
         // save the updated room
         await room.save();
 
-        res.status(200).json({ message: 'Vote submitted successfully', movie: room.movies[movieIndex] });
+        res.status(200).json({ 
+            message: 'Vote submitted successfully', 
+            movie: room.movies[movieIndex] 
+        });
     } catch (error) {
         console.error('Error submitting vote:', error);
         res.status(500).json({ error: 'Failed to submit vote' });
     }
 };
 
-module.exports = { movieNight, submitVote };
+const getResults = async (req, res) => {
+    try {
+        const { roomID } = req.params;
+
+        const room = await Room.findOne({ roomID: roomID });
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+
+        if (!room.movies || room.movies.length === 0) {
+            return res.status(404).json({ error: 'No movies found for this room to calculate' });
+        }
+
+        const totalVotesRecorded = room.movies.reduce((sum, movie) => {
+            return sum + movie.likes + movie.dislikes;
+        }, 0);
+
+        const expectedVotes = room.participantNumber * room.movies.length;
+
+        if (totalVotesRecorded < expectedVotes) {
+            // Calculate how many people we are still waiting for
+            const votesMissing = expectedVotes - totalVotesRecorded;
+            const playersPending = Math.ceil(votesMissing / room.movies.length);
+
+            return res.status(202).json({ 
+                message: "Voting in progress", 
+                waitingFor: playersPending 
+            });
+        }
+
+        const sortedMovies = [...room.movies].sort((a, b) => {
+            // most likes first
+            if (b.likes !== a.likes) {
+                return b.likes - a.likes;
+            }
+            // if likes are the same, least dislikes first
+            if (a.dislikes !== b.dislikes) {
+                return a.dislikes - b.dislikes;
+            }
+
+            return b.voteAverage - a.voteAverage;
+        });
+
+        room.status = 'finished';
+        await room.save();
+
+        res.status(200).json({ 
+            winner: sortedMovies[0], 
+            runnerUps: sortedMovies.slice(1, 3) 
+        });
+    } catch (error) {
+        console.error('Error calculating results:', error);
+        res.status(500).json({ error: 'Failed to calculate results' });
+    }
+};
+
+module.exports = { movieNight, submitVote, getResults };
