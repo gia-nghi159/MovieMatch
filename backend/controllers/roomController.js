@@ -55,6 +55,71 @@ const createRoom = async (req, res) => {
     }  
 };
 
+// join room
+const joinRoom = async (req, res) => {
+    try {
+        const { participantName, roomID } = req.body;
+
+        // validation
+        if (!participantName || participantName.trim() === "") {
+            return res.status(400).json({ error: 'Participant name is required' });
+        }
+        if (!roomID || roomID.trim() === "") {
+            return res.status(400).json({ error: 'Room ID is required' });
+        }
+
+        console.log('Received join-room request:', { participantName, roomID });
+
+        // find the room
+        const room = await Room.findOne({ roomID: roomID });
+
+        if (!room) {
+            return res.status(404).json({ error: 'Room not found' });
+        }
+
+        // only allow joining if room is still waiting
+        if (room.status !== 'waiting') {
+            return res.status(403).json({ error: 'Room is no longer accepting participants' });
+        }
+
+        // prevent duplicate participant names
+        const alreadyJoined = room.participants.some(p => p.name === participantName.trim());
+        if (alreadyJoined) {
+            return res.status(409).json({ error: 'A participant with that name is already in this room' });
+        }
+
+        // add participant to the room
+        room.participants.push({ name: participantName.trim(), role: 'guest', status: 'joined' });
+        await room.save();
+
+        console.log(`${participantName} joined room ${roomID}`);
+
+        // notify host's lobby via socket.io
+        const io = req.app.get('io');
+        io.to(roomID).emit('participant-joined', {
+            participantName: participantName.trim(),
+            participants: room.participants
+        });
+
+        // send data back to the frontend
+        res.json({
+            message: 'Joined successfully',
+            room: {
+                roomID: room.roomID,
+                host: room.host,
+                participantNumber: room.participantNumber,
+                participants: room.participants,
+                status: room.status,
+                createdAt: room.createdAt
+            }
+        });
+
+    } catch (error) {
+        console.error('Error joining room:', error);
+        res.status(500).json({ error: 'Failed to join room' });
+    }
+};
+
 // get room info
 const getRoom = async (req, res) => {
     try {
@@ -76,5 +141,6 @@ const getRoom = async (req, res) => {
 
 module.exports = {
     createRoom,
+    joinRoom,
     getRoom
 };
