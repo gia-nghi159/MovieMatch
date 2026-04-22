@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getRoom, socket } from '../api';
 
-const WaitingOtherToFinish = () => {
+const WaitingToFinish = () => {
   const { roomID } = useParams();
   const navigate = useNavigate();
-
   const [participants, setParticipants] = useState([]);
   const [hostName, setHostName] = useState('');
   const [expectedParticipants, setExpectedParticipants] = useState(0);
@@ -13,54 +13,26 @@ const WaitingOtherToFinish = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let roomInterval;
-    let resultInterval;
-
-    const fetchRoom = async () => {
-      try {
-        const response = await fetch(`http://localhost:8000/api/room/${roomID}`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch room');
-        }
-
-        setParticipants(data.participants || []);
-        setHostName(data.host || '');
-        setExpectedParticipants(data.participantNumber || 0);
-        setStatus(data.status || 'active');
-      } catch (err) {
-        console.error('Fetch room error:', err);
-        setError(err.message || 'Failed to load room data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    const checkResults = async () => {
-      try {
-        const response = await fetch(`http://localhost:8000/api/${roomID}/results`);
-        const data = await response.json();
-
-        if (response.ok && data.winner) {
-          navigate(`/result/${roomID}`);
-        }
-      } catch (err) {
-        console.error('Check results error:', err);
-      }
-    };
-
-    if (roomID) {
-      fetchRoom();
-      checkResults();
-
-      roomInterval = setInterval(fetchRoom, 3000);
-      resultInterval = setInterval(checkResults, 3000);
-    }
+    setLoading(true);
+    getRoom(roomID).then(data => {
+      setParticipants(data.participants || []);
+      setHostName(data.host || '');
+      setExpectedParticipants(data.participantNumber || 0);
+      setStatus(data.status || 'active');
+      setLoading(false);
+    }).catch(err => {
+      setError('Failed to load room data');
+      setLoading(false);
+    });
+    
+    socket.emit('join-socket-room', roomID);
+    
+    socket.on('results-ready', () => {
+      navigate(`/result/${roomID}`);
+    });
 
     return () => {
-      clearInterval(roomInterval);
-      clearInterval(resultInterval);
+      socket.off('results-ready');
     };
   }, [roomID, navigate]);
 
@@ -154,4 +126,4 @@ const WaitingOtherToFinish = () => {
   );
 };
 
-export default WaitingOtherToFinish;
+export default WaitingToFinish;

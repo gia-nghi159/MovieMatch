@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getRoom, startSession, socket } from '../api';
 
 const WaitingLobby = () => {
   const { roomID } = useParams();
@@ -8,66 +9,41 @@ const WaitingLobby = () => {
   const [participants, setParticipants] = useState([]);
   const [hostName, setHostName] = useState('');
   const [expectedParticipants, setExpectedParticipants] = useState(0);
-  const [status, setStatus] = useState('waiting');
-  const [loading, setLoading] = useState(true);
   const [startingSession, setStartingSession] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // check who is currently looking at the screen
+  const currentUser = localStorage.getItem('userName'); 
 
   useEffect(() => {
-    const fetchRoom = async () => {
-      try {
-        setLoading(true);
-        setError('');
+    // fetch room data
+    getRoom(roomID).then(data => {
+      setParticipants(data.participants || []);
+      setHostName(data.host || '');
+      setExpectedParticipants(data.participantNumber || 0);
+    });
 
-        const response = await fetch(`http://localhost:8000/api/room/${roomID}`);
-        const data = await response.json();
+    // set up socket
+    socket.emit('join-socket-room', roomID);
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch room');
-        }
+    socket.on('participant-joined', (data) => {
+      setParticipants(data.participants);
+    });
 
-        setParticipants(data.participants || []);
-        setHostName(data.host || '');
-        setExpectedParticipants(data.participantNumber || 0);
-        setStatus(data.status || 'waiting');
-      } catch (err) {
-        console.error('Fetch room error:', err);
-        setError(err.message || 'Failed to load room data');
-      } finally {
-        setLoading(false);
-      }
+    socket.on('game-started', () => {
+      navigate(`/swipe/${roomID}`); // auto-navigate EVERYONE to swipe page
+    });
+
+    return () => {
+      socket.off('participant-joined');
+      socket.off('game-started');
     };
-
-    if (roomID) {
-      fetchRoom();
-    }
-  }, [roomID]);
+  }, [roomID, navigate]);
 
   const handleStartSession = async () => {
-    try {
-      setStartingSession(true);
-      setError('');
-
-      const response = await fetch(`http://localhost:8000/api/${roomID}/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.message || 'Failed to start session');
-      }
-
-      navigate(`/smart-filter/${roomID}`);
-    } catch (err) {
-      console.error('Start session error:', err);
-      setError(err.message || 'Failed to start session');
-    } finally {
-      setStartingSession(false);
-    }
+    setStartingSession(true);
+    await startSession(roomID); // triggers the backend to emit 'game-started'
   };
 
   return (
@@ -160,12 +136,19 @@ const WaitingLobby = () => {
         </div>
 
         <div className="flex justify-center gap-[15px] mt-[35px] flex-wrap">
-          <button
-  onClick={handleStartSession}
-  className="bg-[#ffd369] text-[#1b1b1b] font-bold py-[14px] px-6 rounded-xl text-[16px] hover:bg-[#ffbf00] transition-all"
->
-  {startingSession ? 'Starting...' : 'Start Session'}
-</button>
+          {currentUser === hostName ? (
+            <button
+              onClick={handleStartSession}
+              className="bg-[#ffd369] text-[#1b1b1b] font-bold py-[14px] px-6 rounded-xl text-[16px] hover:bg-[#ffbf00] transition-all"
+              >
+              {startingSession ? 'Starting...' : 'Start Session'}
+            </button>
+          ) : (
+              <div className="bg-white/20 text-white font-bold py-[14px] px-6 rounded-xl text-[16px]">
+              Waiting for Host to start...
+            </div>
+          )}
+          
 
           <button
             onClick={() => navigate('/')}

@@ -35,6 +35,9 @@ const movieNight = async (req, res) => {
             return res.status(404).json({ message: "Room not found" });
         }
 
+        const io = req.app.get('io');
+        io.to(roomID).emit('game-started');
+
         // send data back to the frontend
         res.status(200).json({ movies: fetchMovies });
     } catch (error) {
@@ -76,10 +79,25 @@ const submitVote = async (req, res) => {
         // save the updated room
         await room.save();
 
+        // check if that is the last vote
+        const totalVotesRecorded = room.movies.reduce((sum, movie) => sum + movie.likes + movie.dislikes, 0);
+        const expectedVotes = room.participantNumber * room.movies.length;
+
+        let isDone = false;
+
+        // ping the waiting room
+        if (totalVotesRecorded >= expectedVotes) {
+            isDone = true;
+            const io = req.app.get('io');
+            io.to(roomID).emit('results-ready');
+        }
+
         res.status(200).json({ 
             message: 'Vote submitted successfully', 
-            movie: room.movies[movieIndex] 
+            movie: room.movies[movieIndex],
+            gameFinished: isDone 
         });
+
     } catch (error) {
         console.error('Error submitting vote:', error);
         res.status(500).json({ error: 'Failed to submit vote' });
@@ -106,7 +124,7 @@ const getResults = async (req, res) => {
         const expectedVotes = room.participantNumber * room.movies.length;
 
         if (totalVotesRecorded < expectedVotes) {
-            // Calculate how many people we are still waiting for
+            // calculate how many people we are still waiting for
             const votesMissing = expectedVotes - totalVotesRecorded;
             const playersPending = Math.ceil(votesMissing / room.movies.length);
 
