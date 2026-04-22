@@ -10,7 +10,8 @@ import WaitingLobby from './pages/WaitingLobby';
 import JoinGroupRoom from './pages/JoinGroupRoom';
 import SmartFilter from './pages/SmartFilter';
 import SwipeVoting from './pages/SwipeVoting';
-import WaitingOthersFinish from './pages/WaitingOthersFinish';
+import WaitingToFinish from './pages/WaitingToFinish';
+import ResultPage from './pages/result';
 
 function App() {
   return (
@@ -28,8 +29,9 @@ function App() {
 
         {/* Voting flow */}
         <Route path="/filters" element={<SmartFilter onSubmit={() => window.location.href = '/swipe'} onBack={() => window.location.href = '/'} />} />
-        <Route path="/swipe" element={<SwipeVoting onFinish={() => window.location.href = '/waiting-finish'} />} />
-        <Route path="/waiting-finish" element={<WaitingOthersFinish onRevealWinner={() => window.location.href = '/result'} />} />
+        <Route path="/swipe/:roomID" element={<SwipeVoting onFinish={() => window.location.href = '/waiting-finish'} />} />
+        <Route path="/waiting-finish/:roomID" element={<WaitingToFinish onRevealWinner={() => window.location.href = '/result'} />} />
+        <Route path="/result/:roomID" element={<ResultPage />} />
       </Routes>
     </Router>
   );

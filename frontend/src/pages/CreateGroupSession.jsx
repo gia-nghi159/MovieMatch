@@ -41,6 +41,7 @@ const CreateGroupSession = () => {
       const actualRoomId = data.roomID;
 
       if (actualRoomId) {
+        localStorage.setItem('userName', hostName);
         navigate(`/lobby/${actualRoomId}`);
       } else {
         alert('Error: Server failed to return room ID');

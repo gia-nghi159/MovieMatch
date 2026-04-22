@@ -1,15 +1,33 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { joinRoom } from '../api';
 
 // join group room page - user enters a 6 character room code to join a session
-const JoinGroupRoom = ({ onJoin, onBack }) => {
+const JoinGroupRoom = ({ onBack }) => {
+  const navigate = useNavigate();
   const [roomCode, setRoomCode] = useState('');
+  const [username, setUsername] = useState('');
+  const [error, setError] = useState('');
 
-  function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (roomCode.trim().length === 6) {
-      onJoin(roomCode.toUpperCase());
+    setError('');
+
+    if (roomCode.trim().length === 6 && username.trim().length > 0) {
+      try {
+        const data = await joinRoom(username, roomCode.toUpperCase());
+        if (data.error) {
+          setError(data.error);
+        } else {
+          localStorage.setItem('userName', username);
+          navigate(`/lobby/${roomCode.toUpperCase()}`);
+        }
+      } catch (err) {
+        console.error('Join room error:', err);
+        setError('Failed to join room. Please try again.');
+      }
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#141e30] to-[#243b55] flex justify-center items-center p-5 text-white font-sans">
@@ -21,7 +39,19 @@ const JoinGroupRoom = ({ onJoin, onBack }) => {
           Enter the room code shared by the host to join the movie session.
         </p>
 
+        {error && <div className="mb-4 text-red-400 bg-red-400/20 p-3 rounded-xl">{error}</div>}
+
         <form onSubmit={handleSubmit}>
+          <label className="block text-left text-[16px] font-bold mb-2 text-white">Your Name</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.toUpperCase())}
+            placeholder="Enter your name"
+            required
+            className="w-full p-[14px_16px] rounded-[12px] text-[16px] mb-4 text-black outline-none border-none"
+          />
+
           <label className="block text-left text-[16px] font-bold mb-2 text-white">
             Room Code
           </label>
@@ -47,7 +77,7 @@ const JoinGroupRoom = ({ onJoin, onBack }) => {
             </button>
             <button
               type="button"
-              onClick={onBack}
+              onClick={() => navigate('/')}
               className="flex-1 bg-transparent border-2 border-[#ffd369] text-[#ffd369] py-[14px] rounded-[12px] text-[16px] font-bold hover:bg-[#ffd369] hover:text-[#1b1b1b] transition-all transform hover:-translate-y-0.5"
             >
               Back
