@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 
-// join group room page - user enters a 6 character room code to join a session
+// join group room page - user enters their name and a 6 character room code to join
 const JoinGroupRoom = ({ onJoin, onBack }) => {
   const [roomCode, setRoomCode] = useState('');
+  const [name, setName] = useState('');
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (roomCode.trim().length === 6) {
-      onJoin(roomCode.toUpperCase());
+    if (roomCode.trim().length === 6 && name.trim()) {
+      onJoin(roomCode.toUpperCase(), name.trim());
     }
   }
 
@@ -18,10 +19,25 @@ const JoinGroupRoom = ({ onJoin, onBack }) => {
         <div className="text-[44px] mb-2">🎟️</div>
         <h1 className="text-[32px] font-bold text-[#ffd369] mb-3">Join Group Room</h1>
         <p className="text-[16px] text-[#f1f1f1] leading-[1.6] mb-7">
-          Enter the room code shared by the host to join the movie session.
+          Enter your name and the room code shared by the host to join the session.
         </p>
 
         <form onSubmit={handleSubmit}>
+
+          {/* Your Name input */}
+          <label className="block text-left text-[16px] font-bold mb-2 text-white">
+            Your Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Enter your name"
+            required
+            className="w-full p-[14px_16px] rounded-[12px] text-[16px] mb-5 text-black outline-none border-none"
+          />
+
+          {/* Room Code input */}
           <label className="block text-left text-[16px] font-bold mb-2 text-white">
             Room Code
           </label>
