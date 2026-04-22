@@ -113,7 +113,113 @@
 
 ---
 
-## 3. Start Movie Night (Fetch Movies)
+## 3. Join Room Endpoint
+* **URL:** `/api/join-room`
+* **Method:** `POST`
+* **Headers:** `Content-Type: application/json`
+
+### Request Payload
+| Field | Type | Description |
+| ---- | --- | --- |
+| `participantName` | `string` | The name of the participant joining the room. |
+| `roomID` | `string` | The 6-character alphanumeric room code to join. |
+
+**Example Request:**
+```json
+{
+  "participantName": "Alice",
+  "roomID": "A1B2C3"
+}
+```
+
+### Success Response
+**Status Code:** `200 OK`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `message` | `string` | Confirmation string. |
+| `room` | `object` | The full updated room object. |
+
+**Example Response:**
+```json
+{
+  "message": "Joined successfully",
+  "room": {
+    "roomID": "A1B2C3",
+    "host": "John",
+    "participantNumber": 4,
+    "participants": [
+      { "name": "John", "role": "host", "status": "joined" },
+      { "name": "Alice", "role": "guest", "status": "joined" }
+    ],
+    "status": "waiting",
+    "createdAt": "2026-04-19T17:00:00.000Z"
+  }
+}
+```
+
+### Error Responses
+| Status Code | Scenario | Response Body |
+| --- | --- | --- |
+| `400 Bad Request` | Missing or empty `participantName` or `roomID` | `{ "error": "Participant name is required" }` |
+| `404 Not Found` | No room exists with that `roomID` | `{ "error": "Room not found" }` |
+| `403 Forbidden` | Room has already started (status is not `"waiting"`) | `{ "error": "Room is no longer accepting participants" }` |
+| `409 Conflict` | A participant with that name already exists in the room | `{ "error": "A participant with that name is already in this room" }` |
+| `500 Internal Server Error` | Database failure or internal crash | `{ "error": "Failed to join room" }` |
+
+---
+
+## Socket.io Events
+
+### Overview
+Socket.io is used to push real-time updates to the host's waiting lobby whenever a new participant joins. Both the host and each guest must emit `join-socket-room` after landing on the waiting lobby to subscribe to their room's events.
+
+---
+
+### Client → Server: `join-socket-room`
+**When to emit:** Immediately after the host or guest lands on the waiting lobby screen.
+
+**Payload:** the roomID string directly (not wrapped in an object)
+
+**Example:**
+```js
+socket.emit('join-socket-room', 'A1B2C3');
+```
+
+---
+
+### Server → Client: `participant-joined`
+**When it fires:** Emitted to all sockets in the room's channel whenever `/api/join-room` succeeds.
+
+**Payload:**
+| Field | Type | Description |
+| --- | --- | --- |
+| `participantName` | `string` | The name of the participant who just joined. |
+| `participants` | `array` | The full updated participants array for the room. |
+
+**Example:**
+```json
+{
+  "participantName": "Alice",
+  "participants": [
+    { "name": "John", "role": "host", "status": "joined" },
+    { "name": "Alice", "role": "guest", "status": "joined" }
+  ]
+}
+```
+
+The host's waiting lobby should listen for this event and re-render the participant list using the `participants` array.
+
+**Example listener:**
+```js
+socket.on('participant-joined', ({ participantName, participants }) => {
+  // update lobby UI with new participants list
+});
+```
+
+---
+
+## 4. Start Movie Night (Fetch Movies)
 * **URL:** `/api/:roomID/start`
 * **Method:** `POST`
 * **Description:** Triggered by the host to start the session. Fetches 10 random popular movies from TMDB, saves them to the room, and changes the room status to "active".
@@ -167,7 +273,7 @@
 
 ---
 
-## 4. Submit Vote 
+## 5. Submit Vote 
 * **URL:** `/api/:roomID/vote`
 * **Method:** `POST`
 * **Headers:** `Content-Type: application/json`
@@ -231,7 +337,6 @@
   "error": "Room not found" 
 }
 ```
-*Note: Also returns 404 with `"error": "Movie not found in this room"` if the movieID doesn't match the array.*
 
 **Status Code:** `500 Internal Server Error`
 ```json
@@ -239,8 +344,10 @@
   "error": "Failed to submit vote"
 }
 ```
+
 ---
-## 5. Get Results
+
+## 6. Get Results
 * **URL:** `/api/:roomID/results`
 * **Method:** `GET`
 * **Description:** Calculates the winner and runner-ups using the sorting algorithm. This endpoint acts as a gatekeeper and will only return the final results once all participants have finished swiping.
@@ -251,7 +358,7 @@
 | `roomID` | `string` | The 6-character alphanumeric room code. |
 
 **Example Request:**
-`GET /api/WJ9F77/results`
+`GET /api/A1B2C3/results`
 
 ### Success Response (Voting Finished)
 **Status Code:** `200 OK`
@@ -285,6 +392,13 @@
 
 ### Progress Response (Voting in Progress)
 **Status Code:** `202 Accepted`
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `message` | `string` | "Voting in progress" |
+| `waitingFor` | `number` | Estimated number of participants still needed to finish. |
+
+**Example Response:**
 ```json
 {
   "message": "Voting in progress",

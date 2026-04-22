@@ -7,6 +7,9 @@ const { movieNight, submitVote, getResults } = require('../controllers/movieCont
 // create-room
 router.post('/create-room', createRoom);
 
+// join-room
+router.post('/join-room', joinRoom);
+
 // get-room
 router.get('/room/:roomID', getRoom);
 
