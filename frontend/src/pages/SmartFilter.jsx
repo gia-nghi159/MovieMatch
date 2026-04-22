@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 
-// smart filter page - user picks genres, mood, runtime etc before swiping
+const genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi', 'Animation', 'Thriller'];
+const moods = ['Feel-Good', 'Exciting', 'Dark', 'Emotional', 'Relaxing', 'Suspenseful'];
+const ratings = ['G', 'PG', 'PG-13', 'R'];
+const languages = ['English', 'Korean', 'Japanese', 'French', 'Any'];
+
 const SmartFilter = ({ onSubmit, onBack }) => {
   const [filters, setFilters] = useState({
     genres: [],
@@ -13,187 +17,195 @@ const SmartFilter = ({ onSubmit, onBack }) => {
     language: '',
   });
 
-  function toggleGenre(genre) {
+  const toggleGenre = (genre) => {
     setFilters((prev) => ({
       ...prev,
       genres: prev.genres.includes(genre)
-        ? prev.genres.filter((g) => g !== genre)
+        ? prev.genres.filter((item) => item !== genre)
         : [...prev.genres, genre],
     }));
-  }
+  };
 
-  function handleSubmit(e) {
+  const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(filters);
-  }
+  };
 
-  const genres = ['Action', 'Comedy', 'Drama', 'Horror', 'Romance', 'Sci-Fi', 'Animation', 'Thriller'];
-  const moods = ['Feel-Good', 'Exciting', 'Dark', 'Emotional', 'Relaxing', 'Suspenseful'];
-  const ratings = ['G', 'PG', 'PG-13', 'R'];
-  const languages = ['English', 'Korean', 'Japanese', 'French', 'Any'];
+  const renderChipGroup = (items, activeValue, onSelect, multiSelect = false) => (
+    <div className="mini-pill-row">
+      {items.map((item) => {
+        const isActive = multiSelect ? activeValue.includes(item) : activeValue === item;
+        return (
+          <button
+            key={item}
+            type="button"
+            className={`chip ${isActive ? 'chip-active' : ''}`}
+            onClick={() => onSelect(item)}
+          >
+            {item}
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#141e30] to-[#243b55] text-white font-sans py-8 px-5">
-      <div className="max-w-[900px] mx-auto bg-white/10 backdrop-blur-md rounded-[24px] p-[35px] shadow-2xl border border-white/10">
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="text-[42px] mb-2">🎬</div>
-          <h1 className="text-[34px] font-bold text-[#ffd369] mb-2">Smart Filters</h1>
-          <p className="text-[16px] text-[#f1f1f1] leading-[1.6] max-w-[700px] mx-auto">
-            Choose your movie preferences before the voting phase begins.
-            Set genres, mood, actors, directors, runtime, rating, and language.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-
-          {/* Genres */}
-          <div className="mb-7 bg-white/5 rounded-[18px] p-[22px]">
-            <h2 className="text-[20px] font-bold text-[#ffd369] mb-4">Genres</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {genres.map((genre) => (
-                <label key={genre} className="flex items-center gap-2 bg-white/10 rounded-[12px] p-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={filters.genres.includes(genre)}
-                    onChange={() => toggleGenre(genre)}
-                  />
-                  {genre}
-                </label>
-              ))}
+    <main className="page page-centered">
+      <div className="page-content hero-animate">
+        <section className="hero-panel">
+          <div className="hero-grid">
+            <div>
+              <div className="brand-mark">🪄</div>
+              <div className="eyebrow" style={{ marginTop: '18px' }}>Smart filters</div>
+              <h1 className="page-title">Set the vibe.</h1>
+              <p className="page-subtitle">Pick a few filters before voting starts.</p>
             </div>
-          </div>
 
-          {/* People Preferences */}
-          <div className="mb-7 bg-white/5 rounded-[18px] p-[22px]">
-            <h2 className="text-[20px] font-bold text-[#ffd369] mb-4">People Preferences</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <aside className="highlight-card lift-animate">
+              <div className="eyebrow">Includes</div>
+              <div className="highlight-art">
+                <span className="mini-pill">Genres</span>
+                <span className="mini-pill">Mood</span>
+                <span className="mini-pill">Actors & directors</span>
+                <span className="mini-pill">Runtime</span>
+                <span className="mini-pill">Rating</span>
+                <span className="mini-pill">Language</span>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <form onSubmit={handleSubmit} className="card-grid" style={{ marginTop: '22px' }}>
+          <section className="surface-panel">
+            <div className="surface-header">
               <div>
-                <label className="block font-bold mb-2">Preferred Actor</label>
+                <h2 className="section-title">Genres</h2>
+                <p className="section-subtitle">Choose any that fit.</p>
+              </div>
+            </div>
+            {renderChipGroup(genres, filters.genres, toggleGenre, true)}
+          </section>
+
+          <section className="surface-panel">
+            <div className="surface-header">
+              <div>
+                <h2 className="section-title">Mood</h2>
+                <p className="section-subtitle">Choose one mood.</p>
+              </div>
+            </div>
+            {renderChipGroup(moods, filters.mood, (mood) => setFilters({ ...filters, mood }))}
+          </section>
+
+          <section className="surface-panel">
+            <div className="surface-header">
+              <div>
+                <h2 className="section-title">People preferences</h2>
+                <p className="section-subtitle">Optional.</p>
+              </div>
+            </div>
+
+            <div className="form-grid">
+              <div className="field">
+                <label className="field-label">Preferred actor</label>
                 <input
+                  className="text-input"
                   type="text"
                   placeholder="e.g. Leonardo DiCaprio"
                   value={filters.actor}
                   onChange={(e) => setFilters({ ...filters, actor: e.target.value })}
-                  className="w-full p-[13px_14px] rounded-[12px] text-[15px] text-black outline-none border-none"
                 />
               </div>
-              <div>
-                <label className="block font-bold mb-2">Preferred Director</label>
+
+              <div className="field">
+                <label className="field-label">Preferred director</label>
                 <input
+                  className="text-input"
                   type="text"
                   placeholder="e.g. Christopher Nolan"
                   value={filters.director}
                   onChange={(e) => setFilters({ ...filters, director: e.target.value })}
-                  className="w-full p-[13px_14px] rounded-[12px] text-[15px] text-black outline-none border-none"
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Mood */}
-          <div className="mb-7 bg-white/5 rounded-[18px] p-[22px]">
-            <h2 className="text-[20px] font-bold text-[#ffd369] mb-4">Mood</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {moods.map((mood) => (
-                <label key={mood} className="flex items-center gap-2 bg-white/10 rounded-[12px] p-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="mood"
-                    value={mood}
-                    checked={filters.mood === mood}
-                    onChange={() => setFilters({ ...filters, mood })}
-                  />
-                  {mood}
-                </label>
-              ))}
+          <section className="surface-panel">
+            <div className="surface-header">
+              <div>
+                <h2 className="section-title">Runtime</h2>
+                <p className="section-subtitle">Set a range.</p>
+              </div>
             </div>
-          </div>
 
-          {/* Runtime */}
-          <div className="mb-7 bg-white/5 rounded-[18px] p-[22px]">
-            <h2 className="text-[20px] font-bold text-[#ffd369] mb-4">Runtime</h2>
-            <label className="block font-bold mb-2">Preferred Runtime Range (minutes)</label>
-            <div className="grid grid-cols-2 gap-3">
-              <input
-                type="number"
-                min="30" max="300"
-                placeholder="Minimum runtime"
-                value={filters.minRuntime}
-                onChange={(e) => setFilters({ ...filters, minRuntime: e.target.value })}
-                className="w-full p-[13px_14px] rounded-[12px] text-[15px] text-black outline-none border-none"
-              />
-              <input
-                type="number"
-                min="30" max="300"
-                placeholder="Maximum runtime"
-                value={filters.maxRuntime}
-                onChange={(e) => setFilters({ ...filters, maxRuntime: e.target.value })}
-                className="w-full p-[13px_14px] rounded-[12px] text-[15px] text-black outline-none border-none"
-              />
+            <div className="form-grid">
+              <div className="field">
+                <label className="field-label">Minimum runtime</label>
+                <input
+                  className="text-input"
+                  type="number"
+                  min="30"
+                  max="300"
+                  placeholder="90"
+                  value={filters.minRuntime}
+                  onChange={(e) => setFilters({ ...filters, minRuntime: e.target.value })}
+                />
+              </div>
+
+              <div className="field">
+                <label className="field-label">Maximum runtime</label>
+                <input
+                  className="text-input"
+                  type="number"
+                  min="30"
+                  max="300"
+                  placeholder="150"
+                  value={filters.maxRuntime}
+                  onChange={(e) => setFilters({ ...filters, maxRuntime: e.target.value })}
+                />
+              </div>
             </div>
-            <p className="text-[14px] text-[#d9d9d9] mt-2">Example: 90 to 150 minutes</p>
-          </div>
+          </section>
 
-          {/* Content Rating */}
-          <div className="mb-7 bg-white/5 rounded-[18px] p-[22px]">
-            <h2 className="text-[20px] font-bold text-[#ffd369] mb-4">Content Rating</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {ratings.map((r) => (
-                <label key={r} className="flex items-center gap-2 bg-white/10 rounded-[12px] p-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="rating"
-                    value={r}
-                    checked={filters.rating === r}
-                    onChange={() => setFilters({ ...filters, rating: r })}
-                  />
-                  {r}
-                </label>
-              ))}
+          <section className="surface-panel">
+            <div className="surface-header">
+              <div>
+                <h2 className="section-title">Content rating</h2>
+                <p className="section-subtitle">Optional.</p>
+              </div>
             </div>
-          </div>
+            {renderChipGroup(ratings, filters.rating, (rating) => setFilters({ ...filters, rating }))}
+          </section>
 
-          {/* Language */}
-          <div className="mb-7 bg-white/5 rounded-[18px] p-[22px]">
-            <h2 className="text-[20px] font-bold text-[#ffd369] mb-4">Language</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-              {languages.map((lang) => (
-                <label key={lang} className="flex items-center gap-2 bg-white/10 rounded-[12px] p-3 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="language"
-                    value={lang}
-                    checked={filters.language === lang}
-                    onChange={() => setFilters({ ...filters, language: lang })}
-                  />
-                  {lang}
-                </label>
-              ))}
+          <section className="surface-panel">
+            <div className="surface-header">
+              <div>
+                <h2 className="section-title">Language</h2>
+                <p className="section-subtitle">Pick one.</p>
+              </div>
             </div>
-          </div>
+            {renderChipGroup(languages, filters.language, (language) => setFilters({ ...filters, language }))}
+          </section>
 
-          {/* Actions */}
-          <div className="flex justify-center gap-4 flex-wrap mt-8">
-            <button
-              type="submit"
-              className="bg-[#ffd369] text-[#1b1b1b] font-bold py-[14px] px-6 rounded-[12px] text-[16px] hover:bg-[#ffbf00] transition-all transform hover:-translate-y-0.5"
-            >
-              Submit
-            </button>
-            <button
-              type="button"
-              onClick={onBack}
-              className="bg-transparent border-2 border-[#ffd369] text-[#ffd369] font-bold py-[14px] px-6 rounded-[12px] text-[16px] hover:bg-[#ffd369] hover:text-[#1b1b1b] transition-all transform hover:-translate-y-0.5"
-            >
-              Back
-            </button>
-          </div>
+          <section className="surface-panel">
+            <div className="surface-header">
+              <div>
+                <h2 className="section-title">Ready?</h2>
+                <p className="section-subtitle">Continue when ready.</p>
+              </div>
+            </div>
 
+            <div className="action-row">
+              <button type="submit" className="btn btn-primary">
+                Apply filters
+              </button>
+              <button type="button" className="btn btn-secondary" onClick={onBack}>
+                Back
+              </button>
+            </div>
+          </section>
         </form>
       </div>
-    </div>
+    </main>
   );
 };
 
