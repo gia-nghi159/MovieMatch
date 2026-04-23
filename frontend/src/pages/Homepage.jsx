@@ -36,7 +36,7 @@ const Homepage = () => {
       </div>
 
       <div className="page-content-narrow home-card hero-animate" style={{ width: 'min(100%, 860px)' }}>
-        <section className="hero-panel center-panel" style={{ width: 'min(100%, 640px)', padding: '42px 40px' }}>
+        <section className="hero-panel center-panel" style={{ width: 'min(100%, 640px)', padding: '46px 40px 38px' }}>
           <div className="brand-mark" style={{ margin: '0 auto' }}>🎬</div>
           <h1 className="home-title">MovieMatch</h1>
           <p className="home-subtitle" style={{ maxWidth: '520px' }}>Pick a movie together.</p>
@@ -47,9 +47,6 @@ const Homepage = () => {
             </button>
             <button className="btn btn-secondary" onClick={() => navigate('/join-room')}>
               Join Room
-            </button>
-            <button className="btn btn-danger" type="button">
-              Solo Mode Soon
             </button>
           </div>
         </section>
