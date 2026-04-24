@@ -2,91 +2,96 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { joinRoom } from '../api';
 
-// join group room page - user enters a 6 character room code to join a session
-const JoinGroupRoom = ({ onBack }) => {
-  const navigate = useNavigate();
+const JoinGroupRoom = ({ onJoin, onBack }) => {
   const [roomCode, setRoomCode] = useState('');
-  const [username, setUsername] = useState('');
-  const [error, setError] = useState('');
+  const [name, setName] = useState('');
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
-    if (roomCode.trim().length === 6 && username.trim().length > 0) {
+    if (roomCode.trim().length === 6 && name.trim()) {
       try {
-        const data = await joinRoom(username, roomCode.toUpperCase());
+        const data = await joinRoom(name.trim(), roomCode.toUpperCase());
+
         if (data.error) {
-          setError(data.error);
+          alert(data.error);
+          return;
+        }
+
+        localStorage.setItem('userName', name.trim());
+
+        if (onJoin) {
+          onJoin(roomCode.toUpperCase(), name.trim());
         } else {
-          localStorage.setItem('userName', username);
           navigate(`/lobby/${roomCode.toUpperCase()}`);
         }
-      } catch (err) {
-        console.error('Join room error:', err);
-        setError('Failed to join room. Please try again.');
+      } catch (error) {
+        alert('Connection Error. Please check if the backend is running.');
       }
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#141e30] to-[#243b55] flex justify-center items-center p-5 text-white font-sans">
-      <div className="w-full max-w-[500px] bg-white/10 backdrop-blur-md rounded-[20px] p-10 shadow-2xl border border-white/10 text-center">
+    <main className="page page-centered">
+      <div className="page-content card-grid hero-animate">
+        <section className="hero-panel">
+          <div className="brand-mark">🎟️</div>
+          <div className="eyebrow" style={{ marginTop: '18px' }}>Join room</div>
+          <h1 className="page-title">Enter The Code</h1>
+          <p className="page-subtitle">Name, code, done.</p>
+        </section>
 
-        <div className="text-[44px] mb-2">🎟️</div>
-        <h1 className="text-[32px] font-bold text-[#ffd369] mb-3">Join Group Room</h1>
-        <p className="text-[16px] text-[#f1f1f1] leading-[1.6] mb-7">
-          Enter the room code shared by the host to join the movie session.
-        </p>
-
-        {error && <div className="mb-4 text-red-400 bg-red-400/20 p-3 rounded-xl">{error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <label className="block text-left text-[16px] font-bold mb-2 text-white">Your Name</label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value.toUpperCase())}
-            placeholder="Enter your name"
-            required
-            className="w-full p-[14px_16px] rounded-[12px] text-[16px] mb-4 text-black outline-none border-none"
-          />
-
-          <label className="block text-left text-[16px] font-bold mb-2 text-white">
-            Room Code
-          </label>
-          <input
-            type="text"
-            value={roomCode}
-            onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
-            placeholder="Enter room code"
-            maxLength={6}
-            required
-            className="w-full p-[14px_16px] rounded-[12px] text-[18px] uppercase tracking-[2px] mb-3 text-black outline-none border-none"
-          />
-          <p className="text-left text-[14px] text-[#d9d9d9] mb-6">
-            Enter the 6-character room code to join the session.
-          </p>
-
-          <div className="flex gap-[15px]">
-            <button
-              type="submit"
-              className="flex-1 bg-[#ffd369] text-[#1b1b1b] py-[14px] rounded-[12px] text-[16px] font-bold hover:bg-[#ffbf00] transition-all transform hover:-translate-y-0.5"
-            >
-              Join Room
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="flex-1 bg-transparent border-2 border-[#ffd369] text-[#ffd369] py-[14px] rounded-[12px] text-[16px] font-bold hover:bg-[#ffd369] hover:text-[#1b1b1b] transition-all transform hover:-translate-y-0.5"
-            >
-              Back
-            </button>
+        <section className="surface-panel lift-animate">
+          <div className="surface-header">
+            <div>
+              <h2 className="section-title">Join room</h2>
+              <p className="section-subtitle">Use the host's 6-character code.</p>
+            </div>
           </div>
-        </form>
 
+          <form onSubmit={handleSubmit} className="form-grid">
+            <div className="field field-full">
+              <label className="field-label">Your name</label>
+              <input
+                className="text-input"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Jamie"
+              />
+            </div>
+
+            <div className="field field-full">
+              <label className="field-label">Room code</label>
+              <input
+                className="text-input"
+                type="text"
+                value={roomCode}
+                onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
+                placeholder="A1B2C3"
+                maxLength={6}
+                style={{ letterSpacing: '0.45em', textTransform: 'uppercase', fontWeight: 800 }}
+              />
+              <p className="field-hint">6 characters.</p>
+            </div>
+
+            <div className="action-row field-full">
+              <button className="btn btn-primary" type="submit">
+                Join room
+              </button>
+              <button
+                className="btn btn-secondary"
+                type="button"
+                onClick={onBack || (() => navigate('/'))}
+              >
+                Back
+              </button>
+            </div>
+          </form>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 
