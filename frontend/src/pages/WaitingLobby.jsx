@@ -12,27 +12,36 @@ const WaitingLobby = () => {
   const [startingSession, setStartingSession] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // check who is currently looking at the screen
-  const currentUser = localStorage.getItem('userName'); 
+
+  const [currentUser] = useState(() => localStorage.getItem('userName'));
+
+  const isHost = participants.some(
+    (person) =>
+      person.role === 'host' &&
+      person.name?.trim().toLowerCase() === currentUser?.trim().toLowerCase()
+  );
 
   useEffect(() => {
-    // fetch room data
-    getRoom(roomID).then(data => {
-      setParticipants(data.participants || []);
-      setHostName(data.host || '');
-      setExpectedParticipants(data.participantNumber || 0);
-    });
+    getRoom(roomID)
+      .then((data) => {
+        setParticipants(data.participants || []);
+        setHostName(data.host || '');
+        setExpectedParticipants(data.participantNumber || 0);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError('Failed to load room data.');
+        setLoading(false);
+      });
 
-    // set up socket
     socket.emit('join-socket-room', roomID);
 
     socket.on('participant-joined', (data) => {
-      setParticipants(data.participants);
+      setParticipants(data.participants || []);
     });
 
     socket.on('game-started', () => {
-      navigate(`/swipe/${roomID}`); // auto-navigate EVERYONE to swipe page
+      navigate(`/swipe/${roomID}`);
     });
 
     return () => {
@@ -43,116 +52,117 @@ const WaitingLobby = () => {
 
   const handleStartSession = async () => {
     setStartingSession(true);
-    await startSession(roomID); // triggers the backend to emit 'game-started'
+
+    try {
+      await startSession(roomID);
+      navigate(`/swipe/${roomID}`);
+    } catch {
+      setError('Failed to start session.');
+      setStartingSession(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#141e30] to-[#243b55] text-white font-sans p-5 flex justify-center items-center">
-      <div className="w-full max-w-[1000px] bg-white/10 backdrop-blur-md rounded-[24px] p-10 shadow-2xl border border-white/10">
-        <div className="text-center mb-[30px]">
-          <div className="text-[42px] mb-[10px]">🎬</div>
-          <h1 className="text-[34px] font-bold text-[#ffd369] mb-[10px]">
+    <div className="min-h-screen bg-[#141e30] text-white font-sans flex justify-center px-6">
+      <div className="w-full max-w-[1120px] bg-[#334157] min-h-screen px-[50px] py-[40px]">
+        <div className="text-center mb-10">
+          <div className="text-[54px] mb-4">⏳ 🎬</div>
+
+          <h1 className="text-[48px] font-bold text-[#ffd369] mb-6">
             Waiting Lobby
           </h1>
-          <p className="text-[17px] text-[#f1f1f1] leading-[1.6]">
-            Share the room code with your friends and wait for everyone to join.
+
+          <p className="text-[24px] leading-[1.7] text-[#f1f1f1] max-w-[900px] mx-auto">
+            Your room has been created successfully. Please wait while the other
+            participants join the movie session.
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-500/20 border border-red-400 text-red-100 px-4 py-3 rounded-xl text-center">
+          <div className="mb-8 bg-red-500/20 border border-red-400 text-red-100 px-5 py-4 rounded-[18px] text-center">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-[25px] mt-[30px]">
-          <div className="bg-white/10 p-[25px] rounded-[18px] shadow-lg">
-            <h2 className="text-[22px] font-bold text-[#ffd369] mb-[18px]">
-              Session Access
-            </h2>
+        <div className="bg-[#4b566b] border-l-[8px] border-[#ffd369] rounded-[20px] p-8 mb-10">
+          <h2 className="text-[30px] font-bold text-[#ffd369] mb-5">
+            Session Status
+          </h2>
 
-            <div className="bg-[#ffd369]/15 border-2 border-dashed border-[#ffd369] rounded-[16px] p-5 text-center mb-5">
-              <div className="text-[15px] text-[#eaeaea] mb-2">
-                Your Room Code
-              </div>
-              <div className="text-[36px] font-bold tracking-[4px] text-[#ffd369] uppercase">
-                {roomID || '------'}
-              </div>
-            </div>
+          <p className="text-[22px] leading-[1.6] text-white">
+            Room code:{' '}
+            <span className="font-bold text-[#ffd369]">
+              {roomID || '------'}
+            </span>
+          </p>
 
-            <div className="bg-white/10 rounded-[16px] p-5 text-center mb-5">
-              <div className="text-[16px] text-[#f4f4f4] mb-2 font-bold">
-                Host
-              </div>
-              <div className="text-[22px] font-bold text-[#ffd369]">
-                {loading ? 'Loading...' : hostName || 'Unknown'}
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white/10 p-[25px] rounded-[18px] shadow-lg flex flex-col">
-            <h2 className="text-[22px] font-bold text-[#ffd369] mb-[18px]">
-              Participants
-            </h2>
-
-            <div className="bg-white/10 border-l-[5px] border-[#ffd369] rounded-[12px] p-[15px] mb-5 text-[16px] text-[#f4f4f4]">
-              {loading ? 'Loading room data...' : 'Waiting for participants...'}
-            </div>
-
-            <ul className="flex flex-col gap-3 list-none">
-              {participants.map((person, index) => (
-                <li
-                  key={index}
-                  className="flex items-center justify-between bg-white/10 border border-white/10 rounded-[16px] px-5 py-4 shadow-md backdrop-blur-sm transition-all duration-200 hover:bg-white/15 hover:-translate-y-[2px] hover:shadow-lg"
-                >
-                  <span className="text-[16px] font-bold text-white">
-                    {person.role === 'host' ? `Host - ${person.name}` : person.name}
-                  </span>
-
-                  <span
-                    className={`text-[14px] px-4 py-1.5 rounded-full font-semibold shadow-sm ${
-                      person.status === 'joined'
-                        ? 'bg-[#2ecc71] text-white'
-                        : 'bg-gray-500 text-white'
-                    }`}
-                  >
-                    {person.status === 'joined' ? 'Connected' : person.status}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            {!loading && participants.length === 0 && (
-              <p className="text-[15px] text-[#ddd] mt-2">
-                No participants have joined yet.
-              </p>
-            )}
-
-            <p className="mt-[18px] text-[15px] text-[#ddd]">
-              {participants.length}/{expectedParticipants || 0} participants joined.
-              {status ? ` Status: ${status}.` : ''}
-            </p>
-          </div>
+          <p className="text-[22px] leading-[1.6] text-white">
+            Host:{' '}
+            <span className="font-bold text-[#ffd369]">
+              {loading ? 'Loading...' : hostName || 'Unknown'}
+            </span>
+          </p>
         </div>
 
-        <div className="flex justify-center gap-[15px] mt-[35px] flex-wrap">
-          {currentUser === hostName ? (
+        <div className="bg-[#4b566b] rounded-[24px] p-8 mb-10">
+          <h2 className="text-center text-[32px] font-bold text-[#ffd369] mb-8">
+            Participants
+          </h2>
+
+          <ul className="flex flex-col gap-[32px] list-none">
+            {participants.map((person, index) => (
+              <li
+                key={index}
+                className="flex justify-between items-center bg-[#5b667a] border border-white/10 rounded-[20px] px-8 py-7 shadow-[0_8px_18px_rgba(0,0,0,0.18)]"
+              >
+                <span className="text-[28px] font-bold !text-white">
+                  {person.role === 'host'
+                    ? `${person.name} (Host)`
+                    : person.name}
+                </span>
+
+                <span
+                  className={`text-[18px] min-w-[150px] text-center px-10 py-3 rounded-full font-bold whitespace-nowrap ${
+                    person.status === 'joined'
+                      ? 'bg-[#7bd36b] !text-white'
+                      : 'bg-[#f0aa00] !text-white'
+                  }`}
+                >
+                  {person.status === 'joined' ? 'Connected' : 'Waiting'}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {!loading && participants.length === 0 && (
+            <p className="text-[20px] text-[#f1f1f1] mt-4 text-center">
+              No participants have joined yet.
+            </p>
+          )}
+
+          <p className="mt-8 text-center text-[22px] text-[#f1f1f1]">
+            {participants.length} of {expectedParticipants || 0} participants have joined.
+          </p>
+        </div>
+
+        <div className="flex justify-center gap-6 flex-wrap">
+          {isHost ? (
             <button
               onClick={handleStartSession}
-              className="bg-[#ffd369] text-[#1b1b1b] font-bold py-[14px] px-6 rounded-xl text-[16px] hover:bg-[#ffbf00] transition-all"
-              >
+              disabled={startingSession}
+              className="bg-[#ffd369] text-[#1b1b1b] font-bold py-4 px-12 rounded-[16px] text-[22px] hover:bg-[#ffbf00] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+            >
               {startingSession ? 'Starting...' : 'Start Session'}
             </button>
           ) : (
-              <div className="bg-white/20 text-white font-bold py-[14px] px-6 rounded-xl text-[16px]">
+            <div className="bg-white/20 text-white font-bold py-4 px-12 rounded-[16px] text-[22px]">
               Waiting for Host to start...
             </div>
           )}
-          
 
           <button
             onClick={() => navigate('/')}
-            className="bg-transparent border-2 border-[#ffd369] text-[#ffd369] font-bold py-[14px] px-6 rounded-xl text-[16px] hover:bg-[#ffd369] hover:text-[#1b1b1b] transition-all"
+            className="bg-transparent border-2 border-[#ffd369] text-[#ffd369] font-bold py-4 px-12 rounded-[16px] text-[22px] hover:bg-[#ffd369] hover:text-[#1b1b1b] transition-all"
           >
             Leave Room
           </button>
